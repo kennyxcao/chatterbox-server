@@ -43,7 +43,10 @@ var requestHandler = function(request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
-  debugger;
+  //debugger;
+    
+  //console.log(request);
+
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
   // The outgoing status.
@@ -56,8 +59,8 @@ var requestHandler = function(request, response) {
   //
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
-  //headers['Content-Type'] = 'text/plain';
-  headers['Content-Type'] = 'text/json';
+  headers['Content-Type'] = 'text/plain';
+  // headers['Content-Type'] = 'text/json';
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
