@@ -46,7 +46,7 @@ var app = {
       url: app.server,
       type: 'POST',
       data: JSON.stringify(message),
-      contentType: 'application/json',
+      //contentType: 'application/json',
       success: function (data) {
         // Clear messages input
         app.$message.val('');
@@ -64,8 +64,9 @@ var app = {
     $.ajax({
       url: app.server,
       type: 'GET',
+      //data: {},
       //data: { order: '-createdAt' },
-      contentType: 'application/json',
+      //contentType: 'application/json',
       success: function(data) {
         console.log(data);
         // Don't bother if we have nothing to work with
@@ -233,7 +234,7 @@ var app = {
 
   startSpinner: function() {
     $('.spinner img').show();
-    $('form input[type=submit]').attr('disabled', 'true');
+    $('form input[type=submit]').attr('disabled', null);
     $('form input[type=submit]').attr('disabled', null);
   },
 

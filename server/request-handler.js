@@ -31,12 +31,7 @@ var defaultCorsHeaders = {
   'Content-Type': 'application/json'
 };
 
-// var messages = [{
-//   username: 'kenny',
-//   text: 'good morning',
-//   roomname: 'lobby'
-// }];
-
+var id = 0;
 var messages = [];
 
 var sendReponse = function(response, data, statusCode) {
@@ -58,9 +53,11 @@ var parseBuffers = function(request, callback) {
 
 var addMessage = function(json) {
   var message = JSON.parse(json);
+  message['objectId'] = (id++).toString();
   if (typeof message === 'object') {
     messages.push(message);
   }
+  
 };
 
 var methods = {
@@ -72,6 +69,8 @@ var methods = {
       var statusCode = 404;
       var data = null;
     }
+    var statusCode = 200;
+    var data = {results: messages};
     sendReponse(response, data, statusCode);
   },
   'POST': function(request, response) {
@@ -81,6 +80,8 @@ var methods = {
     } else {
       var statusCode = 404;
     }
+    var statusCode = 201;
+    parseBuffers(request, addMessage);
     sendReponse(response, null, statusCode);
   }
 };
