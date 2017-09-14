@@ -33,10 +33,12 @@ var defaultCorsHeaders = {
 var id = 0;
 var messages = [];
 
-var sendReponse = function(response, data, statusCode) {
-  var headers = defaultCorsHeaders;
-  response.writeHead(statusCode, headers);
-  response.end(JSON.stringify(data));    
+var addMessage = function(json) {
+  var message = JSON.parse(json);
+  message['objectId'] = ++id;
+  if (typeof message === 'object') {
+    messages.push(message);
+  }
 };
 
 var parseBuffers = function(request, callback) {
@@ -50,13 +52,10 @@ var parseBuffers = function(request, callback) {
   });
 };
 
-var addMessage = function(json) {
-  var message = JSON.parse(json);
-  message['objectId'] = ++id;
-  if (typeof message === 'object') {
-    messages.push(message);
-  }
-  
+var sendReponse = function(response, data, statusCode) {
+  var headers = defaultCorsHeaders;
+  response.writeHead(statusCode, headers);
+  response.end(JSON.stringify(data));    
 };
 
 var methods = {
@@ -130,7 +129,6 @@ exports.requestHandler = requestHandler;
 // .writeHead() writes to the request line and headers of the response,
 // which includes the status and all headers.
 // response.writeHead(statusCode, headers);
-
 
 // Make sure to always call response.end() - Node may not send
 // anything back to the client until you do. The string you pass to
