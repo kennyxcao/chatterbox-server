@@ -1,3 +1,7 @@
+var path = require('path');
+var fs = require('fs');
+var url = require('url');
+
 /*************************************************************
 
 You should implement your request handler function in this file.
@@ -27,17 +31,17 @@ var defaultCorsHeaders = {
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'access-control-allow-headers': 'content-type, accept',
   'access-control-max-age': 10, // Seconds.
-  'Content-Type': 'application/json'
 };
 
 var id = 0;
 var messages = [];
 var statusCode = 404;
 
-var sendReponse = function(response, data, statusCode) {
+var sendReponse = function(response, data, statusCode, contentType) {
   var headers = defaultCorsHeaders;
+  headers['Content-Type'] = contentType;
   response.writeHead(statusCode, headers);
-  response.end(JSON.stringify(data));    
+  response.end(JSON.stringify(data));
 };
 
 var addMessageAndRespond = function(json, response) {
@@ -49,7 +53,7 @@ var addMessageAndRespond = function(json, response) {
   } else {
     statusCode = 400;  
   }
-  sendReponse(response, null, statusCode);
+  sendReponse(response, null, statusCode, 'application/json');
 };   
 
 var parseBuffers = function(request, response, callback) {
@@ -72,7 +76,7 @@ var methods = {
       statusCode = 404;
       var data = null;
     }
-    sendReponse(response, data, statusCode);
+    sendReponse(response, data, statusCode, 'application/json');
   },
   'POST': function(request, response) {
     if (request.url.includes('/classes/messages')) {
@@ -85,15 +89,39 @@ var methods = {
   },
   'OPTIONS': function(request, response) {
     var statusCode = 200;
-    sendReponse(response, null, statusCode);    
+    sendReponse(response, null, statusCode, 'application/json');
   }
 };
 
 var requestHandler = function(request, response) {
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
-  var method = methods[request.method];
-  if (method) {
-    method(request, response);
+  
+  var clientPath = '/client';
+  var uri = url.parse(request.url).pathname;
+  uri = (uri === '/') ? '/index.html' : uri;
+  
+  if (uri === '/classes/messages') {
+    var method = methods[request.method];
+    if (method) {
+      method(request, response);
+    }   
+  } else {
+    var filename = process.cwd() + clientPath + uri;
+    fs.exists(filename, function(exists) {
+      if (!exists) {
+        sendReponse(response, '404 Not Found\n', 404, 'text/plain');
+        return;
+      }
+      fs.readFile(filename, 'binary', function(err, file) {
+        if (err) {
+          sendReponse(response, err + '\n', 'text/plain');
+          return;
+        }
+        response.writeHead(200);
+        response.write(file, 'binary');
+        response.end();
+      });
+    });
   }
 };
 
