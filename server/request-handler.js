@@ -30,7 +30,7 @@ var defaultCorsHeaders = {
   'Content-Type': 'application/json'
 };
 
-var id = 1;
+var id = 0;
 var messages = [];
 
 var sendReponse = function(response, data, statusCode) {
@@ -84,7 +84,6 @@ var methods = {
     sendReponse(response, null, statusCode);    
   }
 };
-
 
 var requestHandler = function(request, response) {
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
