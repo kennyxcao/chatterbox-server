@@ -12,7 +12,6 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 
-
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
 // are on different domains, for instance, your chat client.
@@ -31,7 +30,7 @@ var defaultCorsHeaders = {
   'Content-Type': 'application/json'
 };
 
-var id = 0;
+var id = 1;
 var messages = [];
 
 var sendReponse = function(response, data, statusCode) {
@@ -53,7 +52,7 @@ var parseBuffers = function(request, callback) {
 
 var addMessage = function(json) {
   var message = JSON.parse(json);
-  message['objectId'] = (id++).toString();
+  message['objectId'] = ++id;
   if (typeof message === 'object') {
     messages.push(message);
   }
@@ -62,90 +61,83 @@ var addMessage = function(json) {
 
 var methods = {
   'GET': function(request, response) {
-    if (request.url === '/classes/messages') {
+    if (request.url.includes('/classes/messages')) {
       var statusCode = 200;
       var data = {results: messages};
     } else {
       var statusCode = 404;
       var data = null;
     }
-    var statusCode = 200;
-    var data = {results: messages};
     sendReponse(response, data, statusCode);
   },
   'POST': function(request, response) {
-    if (request.url === '/classes/messages') {
+    if (request.url.includes('/classes/messages')) {
       var statusCode = 201;
       parseBuffers(request, addMessage);
     } else {
       var statusCode = 404;
     }
-    var statusCode = 201;
-    parseBuffers(request, addMessage);
     sendReponse(response, null, statusCode);
+  },
+  'OPTIONS': function(request, response) {
+    var statusCode = 200;
+    sendReponse(response, null, statusCode);    
   }
 };
 
 
 var requestHandler = function(request, response) {
-  // Request and Response come from node's http module.
-  //
-  // They include information about both the incoming request, such as
-  // headers and URL, and about the outgoing response, such as its status
-  // and content.
-  //
-  // Documentation for both request and response can be found in the HTTP section at
-  // http://nodejs.org/documentation/api/
-
-  // Do some basic logging.
-  //
-  // Adding more logging to your server can be an easy way to get passive
-  // debugging help, but you should always be careful about leaving stray
-  // console.logs in your code.
-    
-
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
-
   var method = methods[request.method];
-
   if (method) {
     method(request, response);
   }
-
-
-  // The outgoing status.
-  // if (request.method === 'GET') {
-  //   var statusCode = 200;
-  // }
-  // if (request.method === 'POST') {
-  //   var statusCode = 201;
-  // }
-
-  // See the note below about CORS headers.
-  // var headers = defaultCorsHeaders;
-
-
-  // Tell the client we are sending them plain text.
-  //
-  // You will need to change this if you are sending something
-  // other than plain text, like JSON or HTML.
-  // headers['Content-Type'] = 'application/json';
-
-  // .writeHead() writes to the request line and headers of the response,
-  // which includes the status and all headers.
-  // response.writeHead(statusCode, headers);
-
-
-  // Make sure to always call response.end() - Node may not send
-  // anything back to the client until you do. The string you pass to
-  // response.end() will be the body of the response - i.e. what shows
-  // up in the browser.
-  //
-  // Calling .end "flushes" the response's internal buffer, forcing
-  // node to actually send all the data over to the client.
-  // response.end(JSON.stringify({results: messages}));
 };
-
 
 exports.requestHandler = requestHandler;
 
+// Request and Response come from node's http module.
+//
+// They include information about both the incoming request, such as
+// headers and URL, and about the outgoing response, such as its status
+// and content.
+//
+// Documentation for both request and response can be found in the HTTP section at
+// http://nodejs.org/documentation/api/
+
+// Do some basic logging.
+//
+// Adding more logging to your server can be an easy way to get passive
+// debugging help, but you should always be careful about leaving stray
+// console.logs in your code.
+    
+// The outgoing status.
+// if (request.method === 'GET') {
+//   var statusCode = 200;
+// }
+// if (request.method === 'POST') {
+//   var statusCode = 201;
+// }
+
+// See the note below about CORS headers.
+// var headers = defaultCorsHeaders;
+
+// Tell the client we are sending them plain text.
+//
+// You will need to change this if you are sending something
+// other than plain text, like JSON or HTML.
+// headers['Content-Type'] = 'application/json';
+
+// .writeHead() writes to the request line and headers of the response,
+// which includes the status and all headers.
+// response.writeHead(statusCode, headers);
+
+
+// Make sure to always call response.end() - Node may not send
+// anything back to the client until you do. The string you pass to
+// response.end() will be the body of the response - i.e. what shows
+// up in the browser.
+//
+// Calling .end "flushes" the response's internal buffer, forcing
+// node to actually send all the data over to the client.
+// response.end(JSON.stringify({results: messages}));
