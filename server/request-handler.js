@@ -51,7 +51,7 @@ var parseBuffers = function(request, callback) {
     body.push(chunk);
   });
   request.on('end', function() {
-    body = Buffer.concat(body).toString();
+    body = [].concat(body).toString();
     callback(body);
   });
 };
@@ -65,17 +65,23 @@ var addMessage = function(json) {
 
 var methods = {
   'GET': function(request, response) {
-    var statusCode = 200;
-    var data = {results: messages};
+    if (request.url === '/classes/messages') {
+      var statusCode = 200;
+      var data = {results: messages};
+    } else {
+      var statusCode = 404;
+      var data = null;
+    }
     sendReponse(response, data, statusCode);
   },
   'POST': function(request, response) {
-    var statusCode = 201;
-    parseBuffers(request, addMessage);
+    if (request.url === '/classes/messages') {
+      var statusCode = 201;
+      parseBuffers(request, addMessage);
+    } else {
+      var statusCode = 404;
+    }
     sendReponse(response, null, statusCode);
-  },
-  'OPTIONS': function(request, response) {
-
   }
 };
 

@@ -28,7 +28,7 @@ var app = {
 
     // Fetch previous messages
     app.startSpinner();
-    //app.fetch(false);
+    app.fetch(false);
 
     // Poll for new messages
     // setInterval(function() {
@@ -39,13 +39,14 @@ var app = {
   send: function(message) {
     app.startSpinner();
     
-    console.log(message);
+    //console.log(message);
 
     // POST the message to the server
     $.ajax({
       url: app.server,
       type: 'POST',
       data: JSON.stringify(message),
+      contentType: 'application/json',
       success: function (data) {
         // Clear messages input
         app.$message.val('');
@@ -66,6 +67,7 @@ var app = {
       //data: { order: '-createdAt' },
       contentType: 'application/json',
       success: function(data) {
+        console.log(data);
         // Don't bother if we have nothing to work with
         if (!data.results || !data.results.length) { return; }
 
@@ -231,7 +233,7 @@ var app = {
 
   startSpinner: function() {
     $('.spinner img').show();
-    //$('form input[type=submit]').attr('disabled', 'true');
+    $('form input[type=submit]').attr('disabled', 'true');
     $('form input[type=submit]').attr('disabled', null);
   },
 
