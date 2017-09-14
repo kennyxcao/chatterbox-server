@@ -33,6 +33,22 @@ var defaultCorsHeaders = {
   'access-control-max-age': 10, // Seconds.
 };
 
+var contentTypesMap = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.json': 'application/json',
+  '.css': 'text/css',
+  '.ico': 'image/x-icon',  
+  '.gif': 'image/gif',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.wav': 'audio/wav',
+  '.mp3': 'audio/mpeg',
+  '.pdf': 'application/pdf',
+  '.doc': 'application/msword'
+};
+
 var id = 0;
 var messages = [];
 var statusCode = 404;
@@ -107,17 +123,18 @@ var requestHandler = function(request, response) {
     }   
   } else {
     var filename = process.cwd() + clientPath + uri;
+    var contentType = contentTypesMap[path.extname(filename)];
+    
     fs.exists(filename, function(exists) {
       if (!exists) {
-        sendReponse(response, '404 Not Found\n', 404, 'text/plain');
-        return;
+        return sendReponse(response, '404 Not Found\n', 404, 'text/plain');
       }
+      
       fs.readFile(filename, 'binary', function(err, file) {
         if (err) {
-          sendReponse(response, err + '\n', 'text/plain');
-          return;
+          return sendReponse(response, err + '\n', 'text/plain');
         }
-        response.writeHead(200);
+        response.writeHead(200, {'Content-Type': contentType});
         response.write(file, 'binary');
         response.end();
       });
