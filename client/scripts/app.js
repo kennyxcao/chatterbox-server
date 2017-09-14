@@ -3,8 +3,8 @@ var app = {
 
   //TODO: The current 'handleUsernameClick' function just toggles the class 'friend'
   //to all messages sent by the user
-  //server: 'http://127.0.0.1:3000/chatterbox/classes/messages',
-  server: 'http://127.0.0.1:3000/',
+  server: 'http://127.0.0.1:3000/classes/messages',
+  //server: 'http://127.0.0.1:3000/',
   username: 'anonymous',
   roomname: 'lobby',
   lastMessageId: 0,
@@ -28,22 +28,24 @@ var app = {
 
     // Fetch previous messages
     app.startSpinner();
-    app.fetch(false);
+    //app.fetch(false);
 
     // Poll for new messages
-    setInterval(function() {
-      app.fetch(true);
-    }, 3000);
+    // setInterval(function() {
+    //   app.fetch(true);
+    // }, 3000);
   },
 
   send: function(message) {
     app.startSpinner();
+    
+    console.log(message);
 
     // POST the message to the server
     $.ajax({
       url: app.server,
       type: 'POST',
-      data: message,
+      data: JSON.stringify(message),
       success: function (data) {
         // Clear messages input
         app.$message.val('');
@@ -61,7 +63,7 @@ var app = {
     $.ajax({
       url: app.server,
       type: 'GET',
-      data: { order: '-createdAt' },
+      //data: { order: '-createdAt' },
       contentType: 'application/json',
       success: function(data) {
         // Don't bother if we have nothing to work with
@@ -219,6 +221,8 @@ var app = {
       roomname: app.roomname || 'lobby'
     };
 
+    //console.log(message);
+
     app.send(message);
 
     // Stop the form from submitting
@@ -227,7 +231,8 @@ var app = {
 
   startSpinner: function() {
     $('.spinner img').show();
-    $('form input[type=submit]').attr('disabled', 'true');
+    //$('form input[type=submit]').attr('disabled', 'true');
+    $('form input[type=submit]').attr('disabled', null);
   },
 
   stopSpinner: function() {
