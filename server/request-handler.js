@@ -32,25 +32,7 @@ var defaultCorsHeaders = {
 
 var id = 0;
 var messages = [];
-
-var addMessage = function(json) {
-  var message = JSON.parse(json);
-  message['objectId'] = ++id;
-  if (typeof message === 'object') {
-    messages.push(message);
-  }
-};
-
-var parseBuffers = function(request, callback) {
-  var body = [];
-  request.on('data', function(chunk) {
-    body.push(chunk);
-  });
-  request.on('end', function() {
-    body = [].concat(body).toString();
-    callback(body);
-  });
-};
+var statusCode = 404;
 
 var sendReponse = function(response, data, statusCode) {
   var headers = defaultCorsHeaders;
@@ -58,25 +40,48 @@ var sendReponse = function(response, data, statusCode) {
   response.end(JSON.stringify(data));    
 };
 
+var addMessageAndRespond = function(json, response) {
+  var message = JSON.parse(json);
+  message['objectId'] = ++id;
+  if ('username' in message) {
+    messages.push(message);
+    statusCode = 201;
+  } else {
+    statusCode = 400;  
+  }
+  sendReponse(response, null, statusCode);
+};   
+
+var parseBuffers = function(request, response, callback) {
+  var body = [];
+  request.on('data', function(chunk) {
+    body.push(chunk);
+  });
+  request.on('end', function() {
+    body = [].concat(body).toString();
+    callback(body, response);
+  });
+};
+
 var methods = {
   'GET': function(request, response) {
     if (request.url.includes('/classes/messages')) {
-      var statusCode = 200;
+      statusCode = 200;
       var data = {results: messages};
     } else {
-      var statusCode = 404;
+      statusCode = 404;
       var data = null;
     }
     sendReponse(response, data, statusCode);
   },
   'POST': function(request, response) {
     if (request.url.includes('/classes/messages')) {
-      var statusCode = 201;
-      parseBuffers(request, addMessage);
+      parseBuffers(request, response, addMessageAndRespond);      
     } else {
-      var statusCode = 404;
+      statusCode = 404;
+      sendReponse(response, null, statusCode);
     }
-    sendReponse(response, null, statusCode);
+    
   },
   'OPTIONS': function(request, response) {
     var statusCode = 200;

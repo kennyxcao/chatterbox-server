@@ -73,5 +73,28 @@ describe('server', function() {
     });
   });
 
+  it('should accept OPTIONS requests to /classes/messages', function(done) {
+    var requestParams = {method: 'OPTIONS',
+      uri: 'http://127.0.0.1:3000/classes/messages'
+    };
+
+    request (requestParams, function(error, response, body) {
+      expect(response.statusCode).to.equal(200);
+      done();
+    });
+  });
+
+  it('should respond with 400 for non-parsable data', function(done) {
+    var requestParams = {method: 'POST',
+      uri: 'http://127.0.0.1:3000/classes/messages',
+      json: ['Jono', 'Do my bidding!'] 
+    };
+
+    request (requestParams, function(error, response, body) {
+      expect(response.statusCode).to.equal(400);
+      done();
+    });
+  });
+
 
 });
