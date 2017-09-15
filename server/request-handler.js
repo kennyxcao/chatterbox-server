@@ -49,59 +49,92 @@ var contentTypesMap = {
   '.doc': 'application/msword'
 };
 
-var id = 0;
-var messages = [];
+var id = 1;
+var messages = {results: []};
 var statusCode = 404;
+
+var updateMessagesLog = function(newMessage, callback) {
+  var messagesPath = path.join(__dirname, 'classes/messages/messages.json');
+  fs.readFile(messagesPath, 'utf8', function readFileCB(err, data) {
+    if (err) {
+      console.log('File Read Error: ' + err);
+      return;
+    }
+    
+    messages = JSON.parse(data);
+    
+    if (newMessage) {
+      messages.results.push(newMessage);
+    }
+
+    id = messages.results[messages.results.length - 1].objectId;       
+    var json = JSON.stringify(messages);
+    
+    if (!newMessage) {
+      callback(json);
+    } else {
+      fs.writeFile(messagesPath, json, 'utf8', function() {
+        callback(json);
+      });      
+    }
+  });
+};
 
 var sendReponse = function(response, data, statusCode, contentType) {
   var headers = defaultCorsHeaders;
   headers['Content-Type'] = contentType;
   response.writeHead(statusCode, headers);
-  response.end(JSON.stringify(data));
+  response.end(data);
 };
 
 var addMessageAndRespond = function(json, response) {
   var message = JSON.parse(json);
-  message['objectId'] = ++id;
+  message['objectId'] = id + 1;
   if ('username' in message) {
-    messages.push(message);
-    statusCode = 201;
+    //messages.results.push(message);
+    updateMessagesLog(message, function() {
+      statusCode = 201;
+      sendReponse(response, null, statusCode, 'application/json');    
+    });
   } else {
-    statusCode = 400;  
+    statusCode = 400;
+    sendReponse(response, null, statusCode, 'application/json');
   }
-  sendReponse(response, null, statusCode, 'application/json');
+  
 };   
 
-var parseBuffers = function(request, response, callback) {
+var parseBuffers = function(request, callback) {
   var body = [];
   request.on('data', function(chunk) {
     body.push(chunk);
   });
   request.on('end', function() {
     body = [].concat(body).toString();
-    callback(body, response);
+    callback(body);
   });
 };
 
 var methods = {
   'GET': function(request, response) {
-    if (request.url.includes('/classes/messages')) {
-      statusCode = 200;
-      var data = {results: messages};
-    } else {
-      statusCode = 404;
-      var data = null;
-    }
-    sendReponse(response, data, statusCode, 'application/json');
+    updateMessagesLog(null, function(json) {
+      if (json) {
+        statusCode = 200;
+      }
+      sendReponse(response, json, statusCode, 'application/json');
+    });
+    // if (request.url.includes('/classes/messages')) {
+    //   statusCode = 200;
+    //   var data = messages;
+    // } else {
+    //   statusCode = 404;
+    //   var data = null;
+    // }
+    // sendReponse(response, data, statusCode, 'application/json');
   },
   'POST': function(request, response) {
-    if (request.url.includes('/classes/messages')) {
-      parseBuffers(request, response, addMessageAndRespond);      
-    } else {
-      statusCode = 404;
-      sendReponse(response, null, statusCode);
-    }
-    
+    parseBuffers(request, function(body) {
+      addMessageAndRespond(body, response);
+    });
   },
   'OPTIONS': function(request, response) {
     var statusCode = 200;
@@ -116,7 +149,7 @@ var requestHandler = function(request, response) {
   var uri = url.parse(request.url).pathname;
   uri = (uri === '/') ? '/index.html' : uri;
   
-  if (uri === '/classes/messages') {
+  if (uri.includes('/classes/messages')) {
     var method = methods[request.method];
     if (method) {
       method(request, response);
