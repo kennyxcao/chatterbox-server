@@ -32,5 +32,9 @@
   },
   "dependencies": {
     "nodemon": "^1.12.0"
-  }
+  },
+  "nodemonConfig": {
+    "ignore": ["server/classes/messages/*", "client/*"],
+    "delay": "100"
+  }  
 }

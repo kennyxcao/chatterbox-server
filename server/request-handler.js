@@ -2,30 +2,6 @@ var path = require('path');
 var fs = require('fs');
 var url = require('url');
 
-/*************************************************************
-
-You should implement your request handler function in this file.
-
-requestHandler is already getting passed to http.createServer()
-in basic-server.js, but it won't work as is.
-
-You'll have to figure out a way to export this function from
-this file and include it in basic-server.js so that it actually works.
-
-*Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
-
-**************************************************************/
-
-// These headers will allow Cross-Origin Resource Sharing (CORS).
-// This code allows this server to talk to websites that
-// are on different domains, for instance, your chat client.
-//
-// Your chat client is running from a url like file://your/chat/client/index.html,
-// which is considered a different domain.
-//
-// Another way to get around this restriction is to serve you chat
-// client from this domain by setting up static file serving.
-
 var defaultCorsHeaders = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -49,38 +25,29 @@ var contentTypesMap = {
   '.doc': 'application/msword'
 };
 
-var id = 1;
+var id = 0;
 var messages = {results: []};
-var statusCode = 404;
 
-var updateMessagesLog = function(newMessage, callback) {
+var updateMessagesLog = (newMessage, callback) => {
   var messagesPath = path.join(__dirname, 'classes/messages/messages.json');
   fs.readFile(messagesPath, 'utf8', function readFileCB(err, data) {
-    if (err) {
-      console.log('File Read Error: ' + err);
-      return;
-    }
-    
-    messages = JSON.parse(data);
-    
-    if (newMessage) {
-      messages.results.push(newMessage);
-    }
+    if (err) { return console.log('File Read Error: ' + err); }
 
-    id = messages.results[messages.results.length - 1].objectId;       
+    messages = JSON.parse(data);
+    if (newMessage) { messages.results.push(newMessage); }
+
+    id = (messages.results.length < 1) ? 0 : messages.results[messages.results.length - 1].objectId;       
     var json = JSON.stringify(messages);
-    
+
     if (!newMessage) {
       callback(json);
     } else {
-      fs.writeFile(messagesPath, json, 'utf8', function() {
-        callback(json);
-      });      
+      fs.writeFile(messagesPath, json, 'utf8', () => callback() );      
     }
   });
 };
 
-var sendReponse = function(response, data, statusCode, contentType) {
+var sendReponse = (response, data, statusCode, contentType) => {
   var headers = defaultCorsHeaders;
   headers['Content-Type'] = contentType;
   response.writeHead(statusCode, headers);
@@ -89,84 +56,51 @@ var sendReponse = function(response, data, statusCode, contentType) {
 
 var addMessageAndRespond = function(json, response) {
   var message = JSON.parse(json);
-  message['objectId'] = id + 1;
+  message['objectId'] = ++id;
   if ('username' in message) {
-    //messages.results.push(message);
-    updateMessagesLog(message, function() {
-      statusCode = 201;
-      sendReponse(response, null, statusCode, 'application/json');    
-    });
+    updateMessagesLog(message, () => sendReponse(response, 'Message added to server', 201, 'text/plain') );
   } else {
-    statusCode = 400;
-    sendReponse(response, null, statusCode, 'application/json');
+    sendReponse(response, 'Failed to add messages', 400, 'text/plain');
   }
   
 };   
 
-var parseBuffers = function(request, callback) {
+var parseBuffers = (request, callback) => {
   var body = [];
-  request.on('data', function(chunk) {
-    body.push(chunk);
-  });
-  request.on('end', function() {
+  request.on('data', (chunk) => body.push(chunk) );
+  request.on('end', () => {
     body = [].concat(body).toString();
     callback(body);
   });
 };
 
 var methods = {
-  'GET': function(request, response) {
-    updateMessagesLog(null, function(json) {
-      if (json) {
-        statusCode = 200;
-      }
-      sendReponse(response, json, statusCode, 'application/json');
-    });
-    // if (request.url.includes('/classes/messages')) {
-    //   statusCode = 200;
-    //   var data = messages;
-    // } else {
-    //   statusCode = 404;
-    //   var data = null;
-    // }
-    // sendReponse(response, data, statusCode, 'application/json');
-  },
-  'POST': function(request, response) {
-    parseBuffers(request, function(body) {
-      addMessageAndRespond(body, response);
-    });
-  },
-  'OPTIONS': function(request, response) {
-    var statusCode = 200;
-    sendReponse(response, null, statusCode, 'application/json');
-  }
+  'GET': (request, response) => updateMessagesLog(null, (json) => sendReponse(response, json, json ? 200 : 404, 'application/json')),
+  'POST': (request, response) => parseBuffers(request, (body) => addMessageAndRespond(body, response)),
+  'OPTIONS': (request, response) => sendReponse(response, 'Server OK', 200, 'text/plain')
 };
 
-var requestHandler = function(request, response) {
+var requestHandler = (request, response) => {
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
   
   var clientPath = '/client';
   var uri = url.parse(request.url).pathname;
   uri = (uri === '/') ? '/index.html' : uri;
   
+  // Handle Chat messages responses
   if (uri.includes('/classes/messages')) {
-    var method = methods[request.method];
-    if (method) {
-      method(request, response);
-    }   
+    if (request.method in methods) { 
+      methods[request.method](request, response); 
+    }
   } else {
+    // handle Client Static pages files responses
     var filename = process.cwd() + clientPath + uri;
     var contentType = contentTypesMap[path.extname(filename)];
     
-    fs.exists(filename, function(exists) {
-      if (!exists) {
-        return sendReponse(response, '404 Not Found\n', 404, 'text/plain');
-      }
-      
-      fs.readFile(filename, 'binary', function(err, file) {
-        if (err) {
-          return sendReponse(response, err + '\n', 'text/plain');
-        }
+    fs.exists(filename, (exists) => {
+      if (!exists) { return sendReponse(response, '404 Not Found\n', 404, 'text/plain'); }
+      fs.readFile(filename, 'binary', (err, file) => {
+        if (err) { return sendReponse(response, err + '\n', 'text/plain'); }
         response.writeHead(200, {'Content-Type': contentType});
         response.write(file, 'binary');
         response.end();
@@ -176,6 +110,30 @@ var requestHandler = function(request, response) {
 };
 
 exports.requestHandler = requestHandler;
+
+/*************************************************************
+
+You should implement your request handler function in this file.
+
+requestHandler is already getting passed to http.createServer()
+in basic-server.js, but it won't work as is.
+
+You'll have to figure out a way to export this function from
+this file and include it in basic-server.js so that it actually works.
+
+*Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
+
+**************************************************************/
+
+// These headers will allow Cross-Origin Resource Sharing (CORS).
+// This code allows this server to talk to websites that
+// are on different domains, for instance, your chat client.
+//
+// Your chat client is running from a url like file://your/chat/client/index.html,
+// which is considered a different domain.
+//
+// Another way to get around this restriction is to serve you chat
+// client from this domain by setting up static file serving.
 
 // Request and Response come from node's http module.
 //
